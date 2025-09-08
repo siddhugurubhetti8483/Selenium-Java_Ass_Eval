@@ -1,16 +1,28 @@
 package tests;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.Key;
 import java.time.Duration;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
+import org.testng.ITestResult;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -19,7 +31,6 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class SeleniumSprintChallenge {
     WebDriver driver;
-    // WebDriverWait wait;
     final String baseURL = "https://demoqa.com/";
 
     @BeforeMethod
@@ -61,34 +72,49 @@ public class SeleniumSprintChallenge {
 
     }
 
+    @Test(priority = 2)
     public void Dynamic_Widgets(){
         //!------- Task 2 -------
 
         driver.findElement(By.xpath("//h5[text()='Widgets']")).click();
         driver.findElement((By.xpath("//span[text()='Select Menu']"))).click();
 
-        // WebElement val = driver.findElement(By.xpath("//div[text()='Select Option']"));
-
-        // Select selVal = new Select(val);
-        // selVal.selectByVisibleText("Purple");
-
         WebElement std = driver.findElement(By.id("oldSelectMenu"));
 
         Select sel = new Select(std);
         sel.selectByVisibleText("Purple");
 
-        WebElement react =  driver.findElement(By.cssSelector("div[id='react-select-3']input"));
+        WebElement react =  driver.findElement(By.cssSelector("div[id^='react-select-3']input"));
 
         react.sendKeys("Group 1, option 1");
         react.sendKeys(Keys.ENTER);
-        
 
-
+        WebElement dateInput = driver.findElement(By.id("datePickerMonthYearInput"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].value='15 Apr 2026'", dateInput);
+        dateInput.sendKeys(Keys.TAB);
     }
 
+    @AfterMethod
+    public void tearDown(ITestResult result) {
+        if (!result.isSuccess()) {
+            takeScreenshot(result.getName());
+        }
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+    private void takeScreenshot(String name) {
+        try {
+            Path folder = Paths.get("screenshots");
+            if (!Files.exists(folder)) Files.createDirectories(folder);
 
-
-    // public void tearDown(ITest result){
-    //     if(ITest.F)
-    // }
+            File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            Path dest = folder.resolve(name + ".png");
+            Files.copy(src.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("Screenshot saved: " + dest.toAbsolutePath());
+        } catch (IOException | WebDriverException e) {
+            System.err.println("Failed to save screenshot: " + e.getMessage());
+        }
+    }
 }
+
